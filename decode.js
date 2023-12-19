@@ -1,7 +1,8 @@
 import { Tendermint } from "@quarix/provider";
 import { decodeTxRaw, Registry } from "@cosmjs/proto-signing";
-import { fromBase64 } from "@cosmjs/encoding";
+import { fromBase64, toHex } from "@cosmjs/encoding";
 import { defaultRegistryTypes } from "@cosmjs/stargate";
+import { sha256 } from "@cosmjs/crypto";
 
 const sleep = (time) => {
   return new Promise((resolve) => setTimeout(resolve, time));
@@ -34,7 +35,9 @@ const main = async () => {
       let sendCount = 0;
       let total = 0;
       for (const tx of txs) {
-        const txRaw = decodeTxRaw(fromBase64(tx));
+        const txBytes = fromBase64(tx);
+        const hash = toHex(sha256(txBytes)).toUpperCase();
+        const txRaw = decodeTxRaw(txBytes);
         const messages = txRaw?.body?.messages || [];
         let memo = txRaw?.body?.memo || "";
         if (memo) {
@@ -46,7 +49,7 @@ const main = async () => {
           total++;
           if (message.typeUrl === MsgSendAction) {
             const msg = registry.decode(message);
-            console.log(`[${msg.fromAddress}] send [${msg.amount[0].amount}${msg.amount[0].denom}] to [${msg.toAddress}], memo is [${memo}], block height is [${startBlockHeight}]`);
+            console.log(`[${msg.fromAddress}] send [${msg.amount[0].amount}${msg.amount[0].denom}] to [${msg.toAddress}], memo is [${memo}], tx hash is [${hash}], block height is [${startBlockHeight}]`);
             sendCount++;
           }
         }
