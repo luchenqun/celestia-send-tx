@@ -37,7 +37,14 @@ const main = async () => {
       for (const tx of txs) {
         const txBytes = fromBase64(tx);
         const hash = toHex(sha256(txBytes)).toUpperCase();
-        const txRaw = decodeTxRaw(txBytes);
+        let txRaw;
+        try {
+          txRaw = decodeTxRaw(txBytes);
+        } catch (error) {
+          // 有些ibc的交易decodeTxRaw无法处理
+          console.warn(`${hash} decode fail, please recheck...`);
+        }
+
         const messages = txRaw?.body?.messages || [];
         let memo = txRaw?.body?.memo || "";
         if (memo) {
